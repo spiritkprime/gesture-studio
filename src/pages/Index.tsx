@@ -96,12 +96,11 @@ const Index = () => {
               onReset={resetStats}
             />
 
-            {/* Info card */}
             <div className="glass rounded-xl p-5 space-y-3 animate-fade-in">
               <h3 className="text-sm font-semibold text-foreground tracking-wide uppercase">
                 Supported Gestures
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5 max-h-64 overflow-y-auto pr-1">
                 {[
                   "🖐️ Open Palm",
                   "✊ Fist",
@@ -110,10 +109,29 @@ const Index = () => {
                   "👍 Thumbs Up",
                   "👎 Thumbs Down",
                   "🤟 I Love You",
+                  "👌 OK Sign",
+                  "🤏 Pinch",
+                  "🤘 Rock On",
+                  "🤙 Call Me",
+                  "👉 Finger Gun",
+                  "🕷️ Spider-Man",
+                  "3️⃣ Three",
+                  "4️⃣ Four",
+                  "🫡 Scout Salute",
+                  "🤞 Crossed Fingers",
+                  "🖕 Middle Finger",
+                  "💍 Ring Finger",
+                  "👆 Pointing",
+                  "🦀 Claw",
+                  "🫰 Snap",
+                  "💰 Money",
+                  "✍️ Pen Grip",
+                  "🔷 L Shape",
+                  "🤙 Pinky Promise",
                 ].map((g) => (
                   <div
                     key={g}
-                    className="text-xs bg-muted/50 rounded-md px-3 py-2 text-secondary-foreground font-mono"
+                    className="text-[11px] bg-muted/50 rounded-md px-2.5 py-1.5 text-secondary-foreground font-mono"
                   >
                     {g}
                   </div>

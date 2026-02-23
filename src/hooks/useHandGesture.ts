@@ -4,6 +4,7 @@ import {
   FilesetResolver,
   type GestureRecognizerResult,
 } from "@mediapipe/tasks-vision";
+import { classifyCustomGesture } from "@/lib/gestureClassifier";
 
 export interface GestureData {
   gesture: string;
@@ -154,23 +155,41 @@ export function useHandGesture() {
       drawLandmarks(results);
 
       const gestures: GestureData[] = [];
-      if (results.gestures && results.gestures.length > 0) {
-        for (let i = 0; i < results.gestures.length; i++) {
-          const gesture = results.gestures[i][0];
+      if (results.landmarks && results.landmarks.length > 0) {
+        for (let i = 0; i < results.landmarks.length; i++) {
+          const builtInGesture = results.gestures?.[i]?.[0];
           const handedness = results.handedness?.[i]?.[0];
-          const landmarks = results.landmarks?.[i] || [];
+          const landmarks = results.landmarks[i] || [];
+          const landmarkArr = landmarks.map((l) => ({ x: l.x, y: l.y, z: l.z }));
 
-          if (gesture.categoryName !== "None") {
-            const name = formatGestureName(gesture.categoryName);
+          let name: string | null = null;
+          let confidence = 0;
+
+          // Try built-in gesture first
+          if (builtInGesture && builtInGesture.categoryName !== "None" && builtInGesture.score > 0.5) {
+            name = formatGestureName(builtInGesture.categoryName);
+            confidence = builtInGesture.score;
+          }
+
+          // If no built-in match or low confidence, try custom classifier
+          if (!name || confidence < 0.6) {
+            const custom = classifyCustomGesture(landmarkArr);
+            if (custom && custom.confidence > (confidence || 0)) {
+              name = `${custom.emoji} ${custom.name}`;
+              confidence = custom.confidence;
+            }
+          }
+
+          if (name) {
             gestureCountsRef.current[name] =
               (gestureCountsRef.current[name] || 0) + 1;
             totalGesturesRef.current++;
 
             gestures.push({
               gesture: name,
-              confidence: gesture.score,
+              confidence,
               handedness: handedness?.categoryName || "Unknown",
-              landmarks: landmarks.map((l) => ({ x: l.x, y: l.y, z: l.z })),
+              landmarks: landmarkArr,
             });
           }
         }
