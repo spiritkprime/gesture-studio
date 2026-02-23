@@ -48,23 +48,38 @@ export function useHandGesture() {
       setError(null);
 
       const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
       );
 
-      const recognizer = await GestureRecognizer.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
-          delegate: "GPU",
-        },
-        runningMode: "VIDEO",
-        numHands: 2,
-      });
+      let recognizer: GestureRecognizer;
+      try {
+        recognizer = await GestureRecognizer.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+        });
+      } catch {
+        // GPU failed, fall back to CPU
+        recognizer = await GestureRecognizer.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+            delegate: "CPU",
+          },
+          runningMode: "VIDEO",
+          numHands: 2,
+        });
+      }
 
       recognizerRef.current = recognizer;
       setIsLoading(false);
       return recognizer;
     } catch (err) {
+      console.error("Model init error:", err);
       setError("Failed to load gesture recognition model. Please try again.");
       setIsLoading(false);
       return null;
@@ -148,8 +163,14 @@ export function useHandGesture() {
     fpsFramesRef.current = fpsFramesRef.current.filter((t) => now - t < 1000);
     const fps = fpsFramesRef.current.length;
 
-    if (now !== lastTimeRef.current) {
-      const results = recognizer.recognizeForVideo(video, now);
+    if (now > lastTimeRef.current) {
+      let results: GestureRecognizerResult;
+      try {
+        results = recognizer.recognizeForVideo(video, Math.round(now));
+      } catch {
+        animFrameRef.current = requestAnimationFrame(processFrame);
+        return;
+      }
       lastTimeRef.current = now;
 
       drawLandmarks(results);
